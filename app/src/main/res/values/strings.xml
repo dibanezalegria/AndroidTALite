@@ -1,14 +1,15 @@
 <resources>
-    <string name="app_name">PCarsTA (free)</string>
-    <string name="main_activity_title">Project CARS Time Attack (Free)</string>
-    <string name="edit_database_activity_title">Project CARS TimeAttack (Free) - Edit
+    <string name="app_name">PCarsTA</string>
+    <string name="main_activity_title">Project CARS Time Attack</string>
+    <string name="edit_database_activity_title">Project CARS TimeAttack - Edit
         database</string>
-    <string name="settings_activity_title">Project CARS Time Attack (Free) - Settings</string>
+    <string name="settings_activity_title">Project CARS Time Attack - Settings</string>
     <string name="waiting_car_info">Waiting for car/track information. Continue
         playing&#8230;</string>
     <string name="waiting_car_info_long">Waiting for car/track. Laptime saved
         for later processing. Continue playing&#8230;</string>
-    <string name="lite_version">Free version is limited to 3 car/track entries in the database.</string>
+    <string name="lite_version">Free version is limited to 5 car/track entries in the database
+        .</string>
     <string name="db_locked">Database can not be edited now. Exit to game\'s main menu.</string>
     <string name="settings_locked">Settings can\'t not be accessed now. Exit to game\'s main menu
         .</string>
@@ -26,9 +27,6 @@
     <!-- Preferences -->
     <string name="title_activity_settings">Settings</string>
     <string name="pref_sound_key">pref_sound_key</string>
-    <string name="pref_sound_title">Sound</string>
-    <string name="pref_sound_summary">Enable or disable beeping sounds for best lap in session
-        and first time updating car/track information</string>
     <string name="pref_auto_key">pref_auto_broadcast_key</string>
     <string name="pref_auto_title">Automatic network discovery</string>
     <string name="pref_auto_summary">Enable or disable automatic broadcast address discovery</string>
@@ -50,21 +48,19 @@
         video game developed by Slightly Mad Studios and published and distributed by Bandai Namco Entertainment
         .<br><br/><b>Project CARS Time Attack</b> is a companion app that aims to enhance the single player
         experience. It compares and saves sector times, laptimes and time differences for different combinations
-        of cars and tracks.<h2>About pCARS-TA Free</h2>Session Mode is fully unlocked in this version.
-        Live Database is limited to 3 different car/track entries in the database. The full version also
-        includes the options to backup, restore or transfer your laptimes between devices.
-        If you think pCARS-TA is fun and it adds to your experience, please consider supporting it by
-        purchasing the fully unlocked and ad-free version.</p>]]>
+        of cars and tracks.</p>]]>
     </string>
     <string
         name="help"><![CDATA[<h2>Welcome to Project CARS Time Attack!</h2><p>pCARS-TA has two modes: Session and Live
         Database.<br/><br/>Session shows a list of laptimes and sectors for each lap during a single session.
         It highlights the best sectors, best laptime for the session and the all time record for the car/track
         combination.<br/><br/>Live Database mode shows a list of all the records for the different car/track
-        combinations. It allows you to sort the list by car, laptime or total number of laps
+        combinations and the total number of laps for each combo. It allows you to sort the list by car, laptime or total number of laps
         driven for each car/track. It also has an option to filter the list by car class. If one
         track is selected, only laptimes for that specific track are shown (including a chart with time
-        differences). Live Database updates its content in real-time.</p><h3>Problems running pCARS-TA?</h3>
+        differences). Live Database updates its content in real-time.<br/><br/>Ghost mode shows sector and laptime
+        differences between your current lap and your last, best or record lap, or any other record in your database in real time.</p>
+        <h3>Problems running pCARS-TA?</h3>
         <p>These are a few things you could try:<br/><br/>1. Make sure your WiFi is on and connected to the same
         network as your game console.<br/><br/>2. In game options/system, select UDP frequency 5 and UDP
         <b>Protocol Project CARS 1</b>.<br/><br/>3. pCARS-TA uses your network\'s broadcast address to
@@ -84,5 +80,15 @@
         in the options menu. That will keep the track and car configuration but will reset the laptimes for the session.
         <br/><br/>Enjoy!</p>]]>
     </string>
+
+    <!-- Spinner A in GhostFragment -->
+    <string-array name="spinner_values">
+        <item>LAST LAP</item>
+        <item>BEST IN SESSION</item>
+        <item>ALL TIME BEST</item>
+    </string-array>
+
+    <!-- Spinner B in GhostFragment -->
+    <string name="waiting">Waiting for car/track info</string>
 
 </resources>

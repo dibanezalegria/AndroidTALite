@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private SessionFragment mSessionFragment;
     private LiveDbFragment mLiveDbFragment;
+    private GhostFragment mGhostFragment;
 
     // DEBUG
     private int packetCounter = 0;
@@ -155,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
         // References to fragments
         mSessionFragment = SessionFragment.getInstance();
         mLiveDbFragment = LiveDbFragment.getInstance();
+        mGhostFragment = GhostFragment.getInstance();
 
         mNLapTV = findViewById(R.id.info_nlap_tv);
         mRecordTV = findViewById(R.id.info_record_tv);
@@ -369,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
 
                         // Get record for car/track combo from DB
                         Cursor cursor = getContentResolver().query(LapEntry.CONTENT_URI,
-                                new String[]{LapEntry.COLUMN_LAP_TIME},
+                                null,
                                 LapEntry.COLUMN_LAP_TRACK + " LIKE ? AND " +
                                         LapEntry.COLUMN_LAP_CAR + " LIKE ?",
                                 new String[]{mParser47.track, mParser47.car},
@@ -377,16 +379,22 @@ public class MainActivity extends AppCompatActivity {
 
                         if (cursor != null && cursor.getCount() > 0) {
                             cursor.moveToFirst();
-                            float record = cursor.getFloat(cursor.getColumnIndex(LapEntry
-                                    .COLUMN_LAP_TIME));
+                            float[] ftimes = new float[] {
+                                    cursor.getFloat(cursor.getColumnIndex(LapEntry.COLUMN_LAP_TIME)),
+                                    cursor.getFloat(cursor.getColumnIndex(LapEntry.COLUMN_LAP_S1)),
+                                    cursor.getFloat(cursor.getColumnIndex(LapEntry.COLUMN_LAP_S2)),
+                                    cursor.getFloat(cursor.getColumnIndex(LapEntry.COLUMN_LAP_S3)),
+                            };
+                            Laptime recordLap = new Laptime(0, ftimes, false);
+
                             // Back to black. Buffered laptimes processing changes bgLayout.color
                             LinearLayout bgLayout = findViewById(R.id.record_bg_layout);
                             bgLayout.setBackgroundColor(ContextCompat
                                     .getColor(getApplicationContext(), R.color.black));
                             mRecordTV.setTypeface(null, Typeface.NORMAL);
-                            mRecordTV.setText(Laptime.format(record));
+                            mRecordTV.setText(Laptime.format(recordLap.time));
                             // Inform SessionFragment that SessionAdapter can highlight record.
-                            mSessionFragment.setRecord(record);
+                            mSessionFragment.setRecord(recordLap);
                         }
                         if (cursor != null && !cursor.isClosed())
                             cursor.close();
@@ -394,6 +402,8 @@ public class MainActivity extends AppCompatActivity {
                         // Pass car/track info to LapCursorAdapters via LiveDbFragment
                         mLiveDbFragment.informCursorAdapters(mParser47.car, mParser47.track,
                                 mParser.lastLap);
+                        // Pass car/track to GhostFragment
+                        mGhostFragment.setCarTrackCombo(mParser47.car, mParser47.track);
                     }
                     break;
 
@@ -438,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                                         new ToneGenerator(AudioManager.STREAM_MUSIC, 100)
                                                 .startTone(ToneGenerator.TONE_PROP_BEEP2);
                                     // pass record to SessionFragment (highlight)
-                                    mSessionFragment.setRecord(mLaptime.time);
+                                    mSessionFragment.setRecord(mLaptime);
                                 }
                             }
                             updateSession = true;
@@ -529,18 +539,18 @@ public class MainActivity extends AppCompatActivity {
 
             // This flag makes sure even if several buffered laps are improving the record,
             // SessionFragment.setRecord gets called only once.
-            float newRecord = Float.MAX_VALUE;    // only
+            Laptime newRecordLap = null;
             while (!mBufferedLaps.isEmpty()) {
                 Laptime laptime = mBufferedLaps.remove(0);
                 if (databaseUpdate(laptime)) {
-                    newRecord = laptime.time;
+                    newRecordLap = laptime;
                 }
 //                Log.d(TAG, "Late processing: " + Laptime.format(laptime.time));
             }
 
-            if (newRecord < Float.MAX_VALUE) {
+            if (newRecordLap != null) {
                 // pass record to SessionFragment (highlight)
-                mSessionFragment.setRecord(newRecord);
+                mSessionFragment.setRecord(newRecordLap);
             }
 //            Log.d(TAG, "Buffered laps newRecord: " + Laptime.format(newRecord));
         }
@@ -551,11 +561,12 @@ public class MainActivity extends AppCompatActivity {
          * @param laptime - needed for processBufferedLaps for delayed laptime processing.
          */
         private boolean databaseUpdate(Laptime laptime) {
-            // Laptime validation (invalid laps get filtered out)
-            if (!laptime.isGood())
+            // Crash fix released version 1.0.2: check mParser47
+            if (!laptime.isGood() || mParser47.track == null || mParser47.car == null)
                 return false;
+
             //
-            //  PCarsTA Lite limits database to 3 database entries
+            //  PCarsTA Lite limits database to 5 database entries
             //
             Cursor cursorLite = getContentResolver().query(LapEntry.CONTENT_URI,
                     null,
@@ -564,7 +575,7 @@ public class MainActivity extends AppCompatActivity {
                     null);
 
             // limit lite version to entries in database
-            boolean letLitePass = cursorLite == null || cursorLite.getCount() < 3;
+            boolean letLitePass = cursorLite == null || cursorLite.getCount() < 5;
 //            boolean letLitePass = true;   // unlock lite version
 
             if (cursorLite != null && !cursorLite.isClosed()) {
@@ -702,7 +713,9 @@ public class MainActivity extends AppCompatActivity {
         List<Laptime> laps = new ArrayList<>(mLapMap.values());
         SessionAdapter adapter = new SessionAdapter(getApplicationContext(), laps);
         mSessionFragment.update(adapter);
-//                        Log.d(TAG, "updateSession: mSessionFragment adapter updated.");
+
+        // Inform GhostFragment
+        mGhostFragment.updateLapList(mParser.lapNum, mLapMap);
     }
 
     /**
@@ -716,7 +729,9 @@ public class MainActivity extends AppCompatActivity {
         // Inform adapters that car/track is unknown (highlight purposes)
         mLiveDbFragment.informCursorAdapters(null, null, 0);
         // Inform fragment that record is unknown (highlight purposes)
-        mSessionFragment.setRecord(-1);
+        mSessionFragment.setRecord(null);
+        // Reset GhostFragment session
+        mGhostFragment.hardReset();
         // GUI reset
         mNLapTV.setText("-");
         mCarTrackComboTV.setText(getResources().getString(R.string.waiting_car_info));
@@ -738,6 +753,8 @@ public class MainActivity extends AppCompatActivity {
         mLapMap = new TreeMap<>();
         // GUI reset
         mNLapTV.setText("-");
+        // Reset GhostFragment session
+        mGhostFragment.softReset();
 //        Log.d(TAG, "--------------------- SOFT reset");
     }
 
